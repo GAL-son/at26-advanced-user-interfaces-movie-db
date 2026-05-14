@@ -2,128 +2,170 @@ import { useState } from "react";
 import {
   Container,
   Typography,
-  Card,
-  CardMedia,
-  CardContent,
-  Button,
   Box,
   CircularProgress,
   Alert,
+  Tabs,
+  Tab,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
-import { Grid } from "@mui/material";
-import { useCharacters } from "./hooks/useCharacters";
+import Grid from "@mui/material/Grid";
+import SearchIcon from "@mui/icons-material/Search";
+import MovieIcon from "@mui/icons-material/Movie";
+import PeopleIcon from "@mui/icons-material/People";
+
+// Importy przy użyciu skonfigurowanych aliasów @/
+import { useCharacters } from "@/hooks/useCharacters";
+import { useFetchMovies } from "@/hooks/useFetchMovies";
+import { SkeletonCard } from "@/components/SkeletonCard";
+import { InfiniteMovieList } from "./components/movies/InfiniteMovieList";
+import { CharacterList } from "./components/characters/CharacterList";
 
 function App() {
-  const [page, setPage] = useState(1);
-  const [searchName] = useState(""); // Możesz tu później podpiąć TextField z MUI do wyszukiwania
+  const [currentTab, setCurrentTab] = useState<number>(0); // 0 = Filmy, 1 = Rick & Morty
+  const [page, setPage] = useState<number>(1);
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const { data, isLoading, isError, error, isFetching } = useCharacters(
-    page,
-    searchName,
-  );
+  // 1. Pobieranie danych dla filmów (TMDB / MSW)
+  const {
+    isLoading: isMoviesLoading,
+    isError: isMoviesError,
+    error: moviesError,
+    isFetching: isMoviesFetching,
+  } = useFetchMovies(page, searchQuery);
 
-  // 1. Stan ładowania (Pierwsze uruchomienie)
-  if (isLoading) {
-    return (
-      <Box
-        display="flex"
-        justifyContent="center"
-        alignItems="center"
-        minHeight="80vh"
-      >
-        <CircularProgress color="primary" size={60} />
-      </Box>
-    );
-  }
+  // 2. Pobieranie danych dla rozgrzewki (Rick & Morty)
+  const {
+    data: ramData,
+    isLoading: isRamLoading,
+    isError: isRamError,
+    error: ramError,
+    isFetching: isRamFetching,
+  } = useCharacters(page, currentTab === 1 ? searchQuery : "");
 
-  // 2. Stan błędu
-  if (isError) {
-    return (
-      <Container sx={{ mt: 4 }}>
-        <Alert severity="error">
-          Wystąpił błąd podczas pobierania danych:{" "}
-          {error instanceof Error ? error.message : "Nieznany błąd"}
-        </Alert>
-      </Container>
-    );
-  }
+  // Obsługa zmiany zakładki (resetuje stronę i wyszukiwanie)
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+    setCurrentTab(newValue);
+    setPage(1);
+    setSearchQuery("");
+  };
+
+  // Flagi pomocnicze do zarządzania stanem UI
+  const isLoading = currentTab === 0 ? isMoviesLoading : isRamLoading;
+  const isError = currentTab === 0 ? isMoviesError : isRamError;
+  const currentError = currentTab === 0 ? moviesError : ramError;
+  const isFetching = currentTab === 0 ? isMoviesFetching : isRamFetching;
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Nagłówek aplikacji */}
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={4}
-      >
-        <Typography variant="h3" component="h1" fontWeight="bold">
-          Rick & Morty – Warm-up
-        </Typography>
-        {isFetching && <CircularProgress size={24} />}{" "}
-        {/* Delikatny wskaźnik background fetchingu */}
-      </Box>
-
-      {/* Siatka z kartami postaci */}
-      <Grid container spacing={3}>
-        {data?.results.map((character) => (
-          <Grid key={character.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-            <Card
-              sx={{
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-                boxShadow: 3,
-              }}
-            >
-              <CardMedia
-                component="img"
-                height="220"
-                image={character.image}
-                alt={character.name}
-              />
-              <CardContent sx={{ flexGrow: 1 }}>
-                <Typography variant="h6" component="h2" noWrap>
-                  {character.name}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Status: {character.status} — {character.species}
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-
+      {/* NAGŁÓWEK APLIKACJI */}
       <Box
         sx={{
           display: "flex",
-          justifyContent: "center",
+          justifyContent: "space-between",
           alignItems: "center",
-          gap: 2,
-          mt: 5,
+          mb: 4,
         }}
       >
-        <Button
-          variant="contained"
-          onClick={() => setPage((old) => Math.max(old - 1, 1))}
-          disabled={page === 1}
+        <Typography
+          variant="h3"
+          component="h1"
+          sx={{ fontWeight: "bold", letterSpacing: -1 }}
         >
-          Poprzednia
-        </Button>
-
-        <Typography variant="body1" fontWeight="medium">
-          Strona {page} z {data?.info.pages || 1}
+          🍿 Movie
+          <Box component="span" sx={{ color: "primary.main" }}>
+            Browser
+          </Box>
         </Typography>
-
-        <Button
-          variant="contained"
-          onClick={() => setPage((old) => (data?.info.next ? old + 1 : old))}
-          disabled={!data?.info.next}
-        >
-          Następna
-        </Button>
+        {isFetching && <CircularProgress size={24} />}
       </Box>
+
+      {/* PASEK NAWIGACYJNY (TABS) */}
+      <Box
+        sx={{
+          borderBottom: 1,
+          borderColor: "divider",
+          mb: 4,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 2,
+        }}
+      >
+        <Tabs
+          value={currentTab}
+          onChange={handleTabChange}
+          aria-label="Główna nawigacja"
+        >
+          <Tab
+            icon={<MovieIcon />}
+            iconPosition="start"
+            label="Przeglądarka Filmów"
+          />
+          <Tab
+            icon={<PeopleIcon />}
+            iconPosition="start"
+            label="Rick & Morty (Warm-up)"
+          />
+        </Tabs>
+
+        {/* DYNAMICZNA WYSZUKIWARKA */}
+        <TextField
+          size="small"
+          placeholder={
+            currentTab === 0 ? "Szukaj filmu..." : "Szukaj postaci..."
+          }
+          value={searchQuery}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            setPage(1); // Powrót na 1 stronę przy nowym szukaniu
+          }}
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              ),
+            },
+          }}
+          sx={{ width: { xs: "100%", sm: 300 } }}
+        />
+      </Box>
+
+      {/* OBSŁUGA STANU BŁĘDU */}
+      {isError && (
+        <Alert severity="error" sx={{ mb: 4 }}>
+          Wystąpił błąd:{" "}
+          {currentError instanceof Error
+            ? currentError.message
+            : "Błąd autoryzacji lub sieci"}
+        </Alert>
+      )}
+
+      {/* SIATKA DANYCH (GRID) */}
+      <Grid container spacing={3}>
+        {isLoading ? (
+          // Jeśli trwa pierwsze ładowanie, renderuj siatkę 12 skeletonów
+          Array.from({ length: 12 }).map((_, index) => (
+            <Grid key={index} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+              <SkeletonCard />
+            </Grid>
+          ))
+        ) : currentTab === 0 ? (
+          // RENDEROWANIE FILMÓW (TMDB / MSW)
+          <InfiniteMovieList query={searchQuery} />
+        ) : (
+          <CharacterList
+            data={ramData}
+            page={page}
+            setPage={setPage}
+            isLoading={isRamLoading}
+          />
+        )}
+      </Grid>
     </Container>
   );
 }
