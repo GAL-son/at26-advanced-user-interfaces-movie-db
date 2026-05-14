@@ -4,6 +4,8 @@ import Grid from "@mui/material/Grid";
 import { useInfiniteMovies } from "@/hooks/useInfiniteMovies";
 import { MovieCard } from "@/components/movies/MovieCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
+import { ErrorBanner } from "@/components/ErrorBanner"; 
+import { EmptyState } from "@/components/EmptyState";   
 
 interface Props {
   query?: string;
@@ -17,6 +19,8 @@ export function InfiniteMovieList({ query = "" }: Props) {
     isFetchingNextPage,
     isLoading,
     isError,
+    error,
+    refetch,
   } = useInfiniteMovies(query);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
@@ -54,18 +58,19 @@ export function InfiniteMovieList({ query = "" }: Props) {
     );
   }
 
+  // Obsługa stanu błędu przy użyciu nowego ErrorBanner
   if (isError) {
     return (
-      <Typography
-        color="error"
-        sx={{
-          my: 4,
-          textAlign: "center",
-        }}
-      >
-        Wystąpił błąd podczas ładowania filmów z przewijaniem.
-      </Typography>
+      <ErrorBanner 
+        message={error instanceof Error ? error.message : "Wystąpił nieoczekiwany problem z API."}
+        onRetry={() => refetch()} // Podpięcie akcji ponowienia zapytania
+      />
     );
+  }
+
+  // Obsługa pustego stanu (gdy wyszukiwanie nic nie zwróciło)
+  if (movies.length === 0) {
+    return <EmptyState />;
   }
 
   return (
@@ -96,7 +101,7 @@ export function InfiniteMovieList({ query = "" }: Props) {
           justifyContent: "center",
           alignItems: "center",
           mt: 4,
-          width: "100%", // <-- DODAJ TO: rozciąga kontener na pełną szerokość, co aktywuje centrowanie flexboxa
+          width: "100%",
         }}
       >
         {isFetchingNextPage && <CircularProgress size={24} />}
