@@ -56,7 +56,13 @@ export function InfiniteMovieList({ query = "" }: Props) {
 
   if (isError) {
     return (
-      <Typography color="error" textAlign="center" my={4}>
+      <Typography
+        color="error"
+        sx={{
+          my: 4,
+          textAlign: "center",
+        }}
+      >
         Wystąpił błąd podczas ładowania filmów z przewijaniem.
       </Typography>
     );
@@ -90,6 +96,7 @@ export function InfiniteMovieList({ query = "" }: Props) {
           justifyContent: "center",
           alignItems: "center",
           mt: 4,
+          width: "100%", // <-- DODAJ TO: rozciąga kontener na pełną szerokość, co aktywuje centrowanie flexboxa
         }}
       >
         {isFetchingNextPage && <CircularProgress size={24} />}

@@ -35,7 +35,7 @@ async function enableMocking() {
   if (!import.meta.env.DEV) {
     return;
   }
-  const { worker } = await import('./mocks/browser');
+  const { worker } = await import('@/mocks/browser');
   // onUnhandledRequest: 'bypass' zapobiega spamowaniu konsoli o zapytaniach do fontów czy ikon
   return worker.start({ onUnhandledRequest: 'bypass' });
 }

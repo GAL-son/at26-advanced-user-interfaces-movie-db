@@ -18,9 +18,9 @@ import PeopleIcon from "@mui/icons-material/People";
 // Importy przy użyciu skonfigurowanych aliasów @/
 import { useCharacters } from "@/hooks/useCharacters";
 import { useFetchMovies } from "@/hooks/useFetchMovies";
-import { MovieCard } from "@/components/movies/MovieCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { InfiniteMovieList } from "./components/movies/InfiniteMovieList";
+import { CharacterList } from "./components/characters/CharacterList";
 
 function App() {
   const [currentTab, setCurrentTab] = useState<number>(0); // 0 = Filmy, 1 = Rick & Morty
@@ -29,7 +29,6 @@ function App() {
 
   // 1. Pobieranie danych dla filmów (TMDB / MSW)
   const {
-    data: movieData,
     isLoading: isMoviesLoading,
     isError: isMoviesError,
     error: moviesError,
@@ -159,25 +158,12 @@ function App() {
           // RENDEROWANIE FILMÓW (TMDB / MSW)
           <InfiniteMovieList query={searchQuery} />
         ) : (
-          // RENDEROWANIE RICK & MORTY (Stara struktura, ale przepisana na ładne karty MUI)
-          ramData?.results.map((character) => (
-            <Grid key={character.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-              {/* Tutaj na szybko mapujemy postać na pseudo-film, żeby wykorzystać ten sam komponent karty */}
-              <MovieCard
-                movie={{
-                  id: character.id,
-                  title: character.name,
-                  overview: `Status: ${character.status} | Gatunek: ${character.species}`,
-                  poster_path: character.image.replace(
-                    "https://rickandmortyapi.com/api/character/avatar",
-                    "",
-                  ), // uproszczenie pod IMG_BASE
-                  vote_average: character.status === "Alive" ? 9.0 : 4.0, // Taki mały żarcik deweloperski pod gwiazdki
-                  release_date: "2021",
-                }}
-              />
-            </Grid>
-          ))
+          <CharacterList
+            data={ramData}
+            page={page}
+            setPage={setPage}
+            isLoading={isRamLoading}
+          />
         )}
       </Grid>
     </Container>
