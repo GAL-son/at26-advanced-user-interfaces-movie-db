@@ -40,7 +40,6 @@ export function CharacterList({ data, page, setPage, isLoading }: Props) {
 
   return (
     <>
-      {/* 1. KONTENER SIATKI - TUTAJ ŻYJĄ TYLKO KARTY */}
       <Grid container spacing={3}>
         {data?.results.map((character) => (
           <Grid key={character.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
@@ -49,16 +48,15 @@ export function CharacterList({ data, page, setPage, isLoading }: Props) {
         ))}
       </Grid>
 
-      {/* 2. KONTENER PAGINACJI - JEST CAŁKOWICIE ODSADZONY OD SIATKI */}
       <Box
         sx={{
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
           gap: 3,
-          mt: 6, // Duży margines górny, żeby ładnie odskoczyło od kart
+          mt: 6,
           py: 2,
-          width: "100%", // Gwarancja, że boks zajmie całą szerokość i nie ucieknie do boku
+          width: "100%",
         }}
       >
         <Button

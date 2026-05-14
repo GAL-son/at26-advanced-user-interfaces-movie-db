@@ -15,8 +15,6 @@ export function useInfiniteMovies(query = '') {
     queryFn: async ({ pageParam = 1 }) => {
       const endpoint = query ? '/search/movie' : '/movie/popular';
       
-      // Korzystamy z interceptora, który sam doklei api_key i language,
-      // my podajemy tylko specyficzne dla zapytania parametry:
       const { data } = await tmdbClient.get<TmdbInfiniteResponse>(endpoint, {
         params: {
           page: pageParam as number,

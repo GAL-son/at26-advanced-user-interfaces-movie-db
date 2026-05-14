@@ -12,6 +12,6 @@ export function useMovieDetails(id: number | null) {
             return data;
         },
 
-        enabled: id !== null, // pobiera TYLKO gdy modal otwarty
+        enabled: id !== null,
     });
 }

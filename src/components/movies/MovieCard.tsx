@@ -23,23 +23,17 @@ export function MovieCard({ movie }: Props) {
   const { isFavorite, toggleFavorite } = useFavorites();
   const [optimisticFav, setOptimisticFav] = useState<boolean | null>(null);
 
-  // Stan wyświetlany = optimistic (jeśli ustawiony) ?? rzeczywisty
   const displayedFav = optimisticFav ?? isFavorite(movie.id);
 
   const handleToggle = useCallback(
     async (e: React.MouseEvent) => {
-      // Zapobiegamy otwarciu modala ze szczegółami, jeśli karta docelowo ma być klikalna
       e.stopPropagation();
 
-      // 1. Natychmiast zaktualizuj UI (optimistic)
       setOptimisticFav(!displayedFav);
       try {
-        // 2. Wykonaj faktyczną operację
         await toggleFavorite(movie);
-        // 3. Wyczyść stan optimistic — rzeczywisty stan zsynchronizowany
         setOptimisticFav(null);
       } catch {
-        // 4. Rollback przy błędzie
         setOptimisticFav(null);
       }
     },
@@ -49,7 +43,6 @@ export function MovieCard({ movie }: Props) {
   const releaseYear = movie.release_date
     ? movie.release_date.slice(0, 4)
     : "Brak danych";
-  // TMDB daje ocenę w skali 1-10, MUI Rating potrzebuje skali 1-5
   const ratingValue = movie.vote_average ? movie.vote_average / 2 : 0;
 
   return (
@@ -69,7 +62,6 @@ export function MovieCard({ movie }: Props) {
         },
       }}
     >
-      {/* Przycisk ulubionych umieszczony absolutnie na plakacie */}
       <IconButton
         onClick={handleToggle}
         aria-label={displayedFav ? "Usuń z ulubionych" : "Dodaj do ulubionych"}
@@ -90,7 +82,6 @@ export function MovieCard({ movie }: Props) {
         {displayedFav ? <FavoriteIcon /> : <FavoriteBorderIcon />}
       </IconButton>
 
-      {/* Plakat filmu */}
       <CardMedia
         component="img"
         image={
@@ -105,7 +96,6 @@ export function MovieCard({ movie }: Props) {
         }}
       />
 
-      {/* Zawartość tekstowa */}
       <CardContent
         sx={{ flexGrow: 1, display: "flex", flexDirection: "column", gap: 1 }}
       >
@@ -119,7 +109,7 @@ export function MovieCard({ movie }: Props) {
             WebkitLineClamp: 2,
             WebkitBoxOrient: "vertical",
             overflow: "hidden",
-            height: "2.6em", // Rezerwuje miejsce na 2 linijki tekstu, żeby karty były równe
+            height: "2.6em",
           }}
         >
           {movie.title}
@@ -129,7 +119,6 @@ export function MovieCard({ movie }: Props) {
           {releaseYear}
         </Typography>
 
-        {/* Ocena filmu za pomocą gwiazdek z MUI */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: "auto" }}>
           <Rating value={ratingValue} precision={0.1} readOnly size="small" />
           <Typography variant="body2" sx={{ fontWeight: "bold" }}>

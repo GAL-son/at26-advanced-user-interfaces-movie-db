@@ -13,7 +13,6 @@ interface Props {
 }
 
 export function CharacterCard({ character }: Props) {
-  // Dobieramy kolor chipu w zależności od statusu postaci
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Alive":
@@ -41,7 +40,6 @@ export function CharacterCard({ character }: Props) {
         },
       }}
     >
-      {/* Status postaci jako absolutnie pozycjonowany Chip */}
       <Chip
         label={character.status}
         color={getStatusColor(character.status)}
@@ -64,7 +62,7 @@ export function CharacterCard({ character }: Props) {
         image={character.image || "/no-avatar.png"}
         alt={character.name}
         sx={{
-          aspectRatio: "1/1", // Postacie z RAM są kwadratowe, wygląda to lepiej niż 2/3
+          aspectRatio: "1/1",
           objectFit: "cover",
         }}
       />

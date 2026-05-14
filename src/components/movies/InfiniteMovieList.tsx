@@ -42,10 +42,8 @@ export function InfiniteMovieList({ query = "" }: Props) {
     return () => observer.disconnect();
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  // Mapujemy strukturę stron React Query (pages) na płaską tablicę filmów
   const movies = data?.pages.flatMap((p) => p.results) ?? [];
 
-  // Pierwsze ładowanie (gdy nie ma jeszcze żadnych danych)
   if (isLoading) {
     return (
       <Grid container spacing={3}>
@@ -58,24 +56,21 @@ export function InfiniteMovieList({ query = "" }: Props) {
     );
   }
 
-  // Obsługa stanu błędu przy użyciu nowego ErrorBanner
   if (isError) {
     return (
       <ErrorBanner 
         message={error instanceof Error ? error.message : "Wystąpił nieoczekiwany problem z API."}
-        onRetry={() => refetch()} // Podpięcie akcji ponowienia zapytania
+        onRetry={() => refetch()}
       />
     );
   }
 
-  // Obsługa pustego stanu (gdy wyszukiwanie nic nie zwróciło)
   if (movies.length === 0) {
     return <EmptyState />;
   }
 
   return (
     <>
-      {/* Główna siatka filmów */}
       <Grid container spacing={3}>
         {movies.map((movie) => (
           <Grid key={movie.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
@@ -83,7 +78,6 @@ export function InfiniteMovieList({ query = "" }: Props) {
           </Grid>
         ))}
 
-        {/* Jeśli dociągamy kolejną stronę, doklejamy makiety skeletonów na końcu */}
         {isFetchingNextPage &&
           Array.from({ length: 4 }).map((_, i) => (
             <Grid key={`next-sk-${i}`} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
@@ -92,7 +86,6 @@ export function InfiniteMovieList({ query = "" }: Props) {
           ))}
       </Grid>
 
-      {/* Element "strażnika" obserwowany przez przeglądarkę */}
       <Box
         ref={sentinelRef}
         sx={{

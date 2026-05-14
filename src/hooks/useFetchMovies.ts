@@ -40,8 +40,8 @@ export function useFetchMovies(page = 1, query = '') {
             return data;
         },
 
-        enabled: !isSearch || query.trim().length >= 2, // min 2 znaki dla wyszukiwania
-        placeholderData: (prev) => prev, // płynna paginacja bez migotania
-        staleTime: 1000 * 60 * 3, // 3 minuty
+        enabled: !isSearch || query.trim().length >= 2, 
+        placeholderData: (prev) => prev,
+        staleTime: 1000 * 60 * 3, 
     });
 }
