@@ -1,0 +1,53 @@
+# Logs i błędy npm/yarn
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Dane środowiska uruchomieniowego i testów
+pids
+*.pid
+*.seed
+*.pid.lock
+coverage
+*.lcov
+.nyc_output
+
+# Zależności projektu (bardzo ciężkie foldery, instalowane przez npm install)
+node_modules/
+jspm_packages/
+
+# Cache TypeScript i ESLint
+*.tsbuildinfo
+.eslintcache
+.stylelintcache
+
+# --- BEZPIECZEŃSTWO: Pliki konfiguracyjne z kluczami API (TMDB_API_KEY) ---
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env.local
+
+# POZWÓL na plik przykładowy (szablon bez prawdziwych haseł/kluczy)
+!.env.example
+
+# Foldery konfiguracji edytorów (VS Code, WebStorm/IntelliJ)
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Pliki systemowe (macOS / Windows)
+.DS_Store
+Thumbs.db
+
+# Pliki wynikowe kompilacji (folder produkcyjny Vite)
+dist/
+dist-ssr/
