@@ -10,32 +10,43 @@ import {
   TextField,
   InputAdornment,
 } from "@mui/material";
-import Grid from "@mui/material/Grid";
 import SearchIcon from "@mui/icons-material/Search";
 import MovieIcon from "@mui/icons-material/Movie";
 import PeopleIcon from "@mui/icons-material/People";
 
+// 1. IMPORTY FRAMER MOTION
+import { motion, AnimatePresence } from "framer-motion";
+import type { Variants } from "framer-motion";
+
 // Importy przy użyciu skonfigurowanych aliasów @/
 import { useCharacters } from "@/hooks/useCharacters";
 import { useFetchMovies } from "@/hooks/useFetchMovies";
-import { SkeletonCard } from "@/components/SkeletonCard";
 import { InfiniteMovieList } from "./components/movies/InfiniteMovieList";
 import { CharacterList } from "./components/characters/CharacterList";
+
+// 2. DEFINICJA WARIANTÓW ANIMACJI (dokładnie wg wytycznych wykładowcy)
+const pageVariants: Variants = {
+  initial: { opacity: 0, x: -16 },
+  animate: {
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.28, ease: "easeOut" },
+  },
+  exit: { opacity: 0, x: 16, transition: { duration: 0.18, ease: "easeIn" } },
+};
 
 function App() {
   const [currentTab, setCurrentTab] = useState<number>(0); // 0 = Filmy, 1 = Rick & Morty
   const [page, setPage] = useState<number>(1);
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  // 1. Pobieranie danych dla filmów (TMDB / MSW)
-  const {
-    isLoading: isMoviesLoading,
-    isError: isMoviesError,
-    error: moviesError,
-    isFetching: isMoviesFetching,
-  } = useFetchMovies(page, searchQuery);
+  // Pobieranie danych dla filmów
+  const { error: moviesError, isFetching: isMoviesFetching } = useFetchMovies(
+    page,
+    searchQuery,
+  );
 
-  // 2. Pobieranie danych dla rozgrzewki (Rick & Morty)
+  // Pobieranie danych dla rozgrzewki (Rick & Morty)
   const {
     data: ramData,
     isLoading: isRamLoading,
@@ -51,10 +62,6 @@ function App() {
     setSearchQuery("");
   };
 
-  // Flagi pomocnicze do zarządzania stanem UI
-  const isLoading = currentTab === 0 ? isMoviesLoading : isRamLoading;
-  const isError = currentTab === 0 ? isMoviesError : isRamError;
-  const currentError = currentTab === 0 ? moviesError : ramError;
   const isFetching = currentTab === 0 ? isMoviesFetching : isRamFetching;
 
   return (
@@ -120,7 +127,7 @@ function App() {
           value={searchQuery}
           onChange={(e) => {
             setSearchQuery(e.target.value);
-            setPage(1); // Powrót na 1 stronę przy nowym szukaniu
+            setPage(1);
           }}
           slotProps={{
             input: {
@@ -135,37 +142,40 @@ function App() {
         />
       </Box>
 
-      {/* OBSŁUGA STANU BŁĘDU */}
-      {isError && (
-        <Alert severity="error" sx={{ mb: 4 }}>
-          Wystąpił błąd:{" "}
-          {currentError instanceof Error
-            ? currentError.message
-            : "Błąd autoryzacji lub sieci"}
-        </Alert>
-      )}
-
-      {/* SIATKA DANYCH (GRID) */}
-      <Grid container spacing={3}>
-        {isLoading ? (
-          // Jeśli trwa pierwsze ładowanie, renderuj siatkę 12 skeletonów
-          Array.from({ length: 12 }).map((_, index) => (
-            <Grid key={index} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
-              <SkeletonCard />
-            </Grid>
-          ))
-        ) : currentTab === 0 ? (
-          // RENDEROWANIE FILMÓW (TMDB / MSW)
-          <InfiniteMovieList query={searchQuery} />
-        ) : (
-          <CharacterList
-            data={ramData}
-            page={page}
-            setPage={setPage}
-            isLoading={isRamLoading}
-          />
-        )}
-      </Grid>
+      {/* 3. ANIMOWANA ZMIANA TREŚCI Z UŻYCIEM ANIMATEPRESENCE */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentTab} // Klucz oparty o stan tabu zmusza komponent do ponownego montowania i uruchamia animację exit/initial
+          variants={pageVariants}
+          initial="initial"
+          animate="animate"
+          exit="exit"
+          style={{ width: "100%" }} // Rozwiązuje problem ewentualnego kurczenia się siatki przy transformacjach x
+        >
+          {currentTab === 0 ? (
+            // RENDEROWANIE FILMÓW (Zarządza swoimi wewnętrznymi skeletonami i błędami w InfiniteMovieList)
+            <InfiniteMovieList query={searchQuery} />
+          ) : (
+            // RENDEROWANIE RICK & MORTY
+            <>
+              {isRamError && (
+                <Alert severity="error" sx={{ mb: 4 }}>
+                  Wystąpił błąd:{" "}
+                  {ramError instanceof Error
+                    ? ramError.message
+                    : "Błąd sieci RAM API"}
+                </Alert>
+              )}
+              <CharacterList
+                data={ramData}
+                page={page}
+                setPage={setPage}
+                isLoading={isRamLoading}
+              />
+            </>
+          )}
+        </motion.div>
+      </AnimatePresence>
     </Container>
   );
 }
