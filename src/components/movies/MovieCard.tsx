@@ -47,6 +47,8 @@ export function MovieCard({ movie }: Props) {
 
   return (
     <Card
+      // Dodajemy atrybut tabIndex, aby karta mogła przyjąć focus z klawiatury (dostępność / a11y)
+      tabIndex={0}
       sx={{
         position: "relative",
         height: "100%",
@@ -54,11 +56,22 @@ export function MovieCard({ movie }: Props) {
         flexDirection: "column",
         boxShadow: 3,
         borderRadius: 2,
-        transition: "transform 0.2s, box-shadow 0.2s",
+        cursor: "pointer",
+        
+        // 1. Definicja przejścia i optymalizacja wydajności (Etap A)
+        transition: "transform 0.2s ease, box-shadow 0.2s ease, outline 0.1s ease",
+        willChange: "transform",
+        
+        // 2. Stan Hover z precyzyjnymi wartościami od wykładowcy
         "&:hover": {
-          transform: "translateY(-4px)",
-          boxShadow: 6,
-          cursor: "pointer",
+          transform: "scale(1.03) translateY(-2px)",
+          boxShadow: "0 8px 24px rgba(0, 67, 255, 0.15)",
+        },
+        
+        // 3. Focus ring dla osób nawigujących klawiaturą (Tab)
+        "&:focus-visible": {
+          outline: "2px solid #0043FF",
+          outlineOffset: "2px",
         },
       }}
     >
