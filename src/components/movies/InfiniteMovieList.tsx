@@ -4,10 +4,9 @@ import Grid from "@mui/material/Grid";
 import { useInfiniteMovies } from "@/hooks/useInfiniteMovies";
 import { MovieCard } from "@/components/movies/MovieCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
-import { ErrorBanner } from "@/components/ErrorBanner"; 
 import { EmptyState } from "@/components/EmptyState";   
+import { useToast } from "@/context/ToastContext"; // <-- IMPORT KOLEI TOASTU
 
-// 1. IMPORTY FRAMER MOTION (Z uwzględnieniem rygorystycznych typów)
 import { motion } from "framer-motion";
 import type { Variants } from "framer-motion";
 
@@ -15,27 +14,19 @@ interface Props {
   query?: string;
 }
 
-// 2. DEFINICJA WARIANTÓW STAGGER (Kaskada 80ms)
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08, // Opóźnienie 80ms między kolejnymi kartami
-    },
-  },
+  visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
 };
 
 const itemVariants: Variants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { 
-    opacity: 1, 
-    y: 0,
-    transition: { duration: 0.3, ease: "easeOut" }
-  },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
 };
 
 export function InfiniteMovieList({ query = "" }: Props) {
+  const { showToast } = useToast(); // Instancja wywoływania toastów
+  
   const {
     data,
     fetchNextPage,
@@ -44,10 +35,17 @@ export function InfiniteMovieList({ query = "" }: Props) {
     isLoading,
     isError,
     error,
-    refetch,
   } = useInfiniteMovies(query);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // EFEKT MONITORUJĄCY BŁĘDY W TLE: Reaguje natychmiast na zmianę stanu isError
+  useEffect(() => {
+    if (isError && error) {
+      const errMsg = error instanceof Error ? error.message : "Błąd sieci API";
+      showToast(`Problem z przewijaniem: ${errMsg}`);
+    }
+  }, [isError, error, showToast]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -80,26 +78,16 @@ export function InfiniteMovieList({ query = "" }: Props) {
     );
   }
 
-  if (isError) {
-    return (
-      <ErrorBanner 
-        message={error instanceof Error ? error.message : "Wystąpił nieoczekiwany problem z API."}
-        onRetry={() => refetch()}
-      />
-    );
-  }
-
-  if (movies.length === 0) {
+  if (movies.length === 0 && !isError) {
     return <EmptyState />;
   }
 
   return (
     <>
-      {/* 3. PODPIĘCIE ANIMACJI DO KONTENERA GRID */}
       <Grid 
         container 
         spacing={3}
-        component={motion.div}     // Zmiana komponentu bazowego na animowany div
+        component={motion.div}
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -108,14 +96,13 @@ export function InfiniteMovieList({ query = "" }: Props) {
           <Grid 
             key={movie.id} 
             size={{ xs: 12, sm: 6, md: 4, lg: 3 }}
-            component={motion.div} // Każda kolumna staje się animowanym dzieckiem
+            component={motion.div}
             variants={itemVariants}
           >
             <MovieCard movie={movie} />
           </Grid>
         ))}
 
-        {/* Makietom skeletonów celowo nie dodajemy staggerChildren, aby unikać błędów renderowania przy szybkim przewijaniu */}
         {isFetchingNextPage &&
           Array.from({ length: 4 }).map((_, i) => (
             <Grid key={`next-sk-${i}`} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
