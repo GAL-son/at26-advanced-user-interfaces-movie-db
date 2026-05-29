@@ -4,14 +4,29 @@ import Grid from "@mui/material/Grid";
 import { useInfiniteMovies } from "@/hooks/useInfiniteMovies";
 import { MovieCard } from "@/components/movies/MovieCard";
 import { SkeletonCard } from "@/components/SkeletonCard";
-import { ErrorBanner } from "@/components/ErrorBanner"; 
 import { EmptyState } from "@/components/EmptyState";   
+import { useToast } from "@/context/ToastContext"; // <-- IMPORT KOLEI TOASTU
+
+import { motion } from "framer-motion";
+import type { Variants } from "framer-motion";
 
 interface Props {
   query?: string;
 }
 
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.08 } },
+};
+
+const itemVariants: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.3, ease: "easeOut" } },
+};
+
 export function InfiniteMovieList({ query = "" }: Props) {
+  const { showToast } = useToast(); // Instancja wywoływania toastów
+  
   const {
     data,
     fetchNextPage,
@@ -20,10 +35,17 @@ export function InfiniteMovieList({ query = "" }: Props) {
     isLoading,
     isError,
     error,
-    refetch,
   } = useInfiniteMovies(query);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // EFEKT MONITORUJĄCY BŁĘDY W TLE: Reaguje natychmiast na zmianę stanu isError
+  useEffect(() => {
+    if (isError && error) {
+      const errMsg = error instanceof Error ? error.message : "Błąd sieci API";
+      showToast(`Problem z przewijaniem: ${errMsg}`);
+    }
+  }, [isError, error, showToast]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -56,24 +78,27 @@ export function InfiniteMovieList({ query = "" }: Props) {
     );
   }
 
-  if (isError) {
-    return (
-      <ErrorBanner 
-        message={error instanceof Error ? error.message : "Wystąpił nieoczekiwany problem z API."}
-        onRetry={() => refetch()}
-      />
-    );
-  }
-
-  if (movies.length === 0) {
+  if (movies.length === 0 && !isError) {
     return <EmptyState />;
   }
 
   return (
     <>
-      <Grid container spacing={3}>
+      <Grid 
+        container 
+        spacing={3}
+        component={motion.div}
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
+      >
         {movies.map((movie) => (
-          <Grid key={movie.id} size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
+          <Grid 
+            key={movie.id} 
+            size={{ xs: 12, sm: 6, md: 4, lg: 3 }}
+            component={motion.div}
+            variants={itemVariants}
+          >
             <MovieCard movie={movie} />
           </Grid>
         ))}

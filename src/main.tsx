@@ -5,6 +5,9 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import App from './App';
 
+// IMPORT NOWEGO PROVIDERA TOASTÓW
+import { ToastProvider } from "@/context/ToastContext";
+
 // Konfiguracja globalna React Query
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -36,7 +39,6 @@ async function enableMocking() {
     return;
   }
   const { worker } = await import('@/mocks/browser');
-  // onUnhandledRequest: 'bypass' zapobiega spamowaniu konsoli o zapytaniach do fontów czy ikon
   return worker.start({ onUnhandledRequest: 'bypass' });
 }
 
@@ -47,7 +49,10 @@ enableMocking().then(() => {
       <QueryClientProvider client={queryClient}>
         <ThemeProvider theme={darkTheme}>
           <CssBaseline />
-          <App />
+          {/* Owijamy App w ToastProvider – dzięki temu alerty MUI przejmą poprawny, ciemny motyw z ThemeProvider */}
+          <ToastProvider>
+            <App />
+          </ToastProvider>
         </ThemeProvider>
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
