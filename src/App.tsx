@@ -1,10 +1,8 @@
-import { useState } from "react";
 import {
   Container,
   Typography,
   Box,
   CircularProgress,
-  Alert,
   Tabs,
   Tab,
   TextField,
@@ -13,18 +11,16 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import MovieIcon from "@mui/icons-material/Movie";
 import PeopleIcon from "@mui/icons-material/People";
+import { useIsFetching } from "@tanstack/react-query";
+import { useState, useEffect } from "react";
 
-// 1. IMPORTY FRAMER MOTION
+// React Router i Framer Motion
+import { Outlet, Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Variants } from "framer-motion";
 
-// Importy przy użyciu skonfigurowanych aliasów @/
-import { useCharacters } from "@/hooks/useCharacters";
-import { useFetchMovies } from "@/hooks/useFetchMovies";
-import { InfiniteMovieList } from "./components/movies/InfiniteMovieList";
-import { CharacterList } from "./components/characters/CharacterList";
+import ReactGA from "react-ga4";
 
-// 2. DEFINICJA WARIANTÓW ANIMACJI (dokładnie wg wytycznych wykładowcy)
 const pageVariants: Variants = {
   initial: { opacity: 0, x: -16 },
   animate: {
@@ -36,59 +32,84 @@ const pageVariants: Variants = {
 };
 
 function App() {
-  const [currentTab, setCurrentTab] = useState<number>(0); // 0 = Filmy, 1 = Rick & Morty
-  const [page, setPage] = useState<number>(1);
-  const [searchQuery, setSearchQuery] = useState<string>("");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Pobieranie danych dla filmów
-  const { error: moviesError, isFetching: isMoviesFetching } = useFetchMovies(
-    page,
-    searchQuery,
-  );
+  // Dynamicznie sprawdzamy, czy jakikolwiek hook z React Query akurat pobiera dane
+  const isFetchingGlobal = useIsFetching() > 0;
 
-  // Pobieranie danych dla rozgrzewki (Rick & Morty)
-  const {
-    data: ramData,
-    isLoading: isRamLoading,
-    isError: isRamError,
-    error: ramError,
-    isFetching: isRamFetching,
-  } = useCharacters(page, currentTab === 1 ? searchQuery : "");
+  // Mapowanie ścieżki na indeks zakładki MUI
+  const getTabIndex = (pathname: string) => {
+    if (pathname.startsWith("/rick-and-morty")) return 1;
+    return 0; // domyślnie /movies
+  };
 
-  // Obsługa zmiany zakładki (resetuje stronę i wyszukiwanie)
+  const currentTab = getTabIndex(location.pathname);
+  const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
+
+  // Aktualizacja lokalnego inputa, jeśli zmienią się parametry URL z zewnątrz
+  useEffect(() => {
+    setSearchQuery(searchParams.get("search") || "");
+  }, [searchParams]);
+
+  useEffect(() => {
+    // Wysyła informację do GA4 przy każdej zmianie ścieżki (URL)
+    ReactGA.send({
+      hitType: "pageview",
+      page: location.pathname + location.search
+    });
+  }, [location]);
+
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-    setCurrentTab(newValue);
-    setPage(1);
+    const targetPath = newValue === 0 ? "/movies" : "/rick-and-morty";
+
+    // Zdarzenie 1: Kliknięcie CTA / Przełączenie zakładki nawigacji
+    ReactGA.event("cta_click", {
+      location: "main_navigation",
+      target_tab: targetPath
+    });
+
+    navigate(targetPath);
     setSearchQuery("");
   };
 
-  const isFetching = currentTab === 0 ? isMoviesFetching : isRamFetching;
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setSearchQuery(value);
 
+    if (value) {
+      setSearchParams({ search: value });
+
+      // Zdarzenie 2: Wyszukiwanie (Submit/Wpisanie frazy)
+      ReactGA.event("search_submit", {
+        search_term: value
+      });
+    } else {
+      // Zdarzenie 3: Porzucenie wyszukiwania (wyczyszczenie inputa)
+      ReactGA.event("search_abandoned", {
+        reason: "clear_input"
+      });
+
+      searchParams.delete("search");
+      setSearchParams(searchParams);
+    }
+  };
+  
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* NAGŁÓWEK APLIKACJI */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 4,
-        }}
-      >
-        <Typography
-          variant="h3"
-          component="h1"
-          sx={{ fontWeight: "bold", letterSpacing: -1 }}
-        >
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
+        <Typography variant="h3" component="h1" sx={{ fontWeight: "bold", letterSpacing: -1 }}>
           🍿 Movie
           <Box component="span" sx={{ color: "primary.main" }}>
             Browser
           </Box>
         </Typography>
-        {isFetching && <CircularProgress size={24} />}
+        {isFetchingGlobal && <CircularProgress size={24} />}
       </Box>
 
-      {/* PASEK NAWIGACYJNY (TABS) */}
+      {/* PASEK NAWIGACYJNY (TABS) ZINTEGROWANY Z ROUTEREM */}
       <Box
         sx={{
           borderBottom: 1,
@@ -101,34 +122,17 @@ function App() {
           gap: 2,
         }}
       >
-        <Tabs
-          value={currentTab}
-          onChange={handleTabChange}
-          aria-label="Główna nawigacja"
-        >
-          <Tab
-            icon={<MovieIcon />}
-            iconPosition="start"
-            label="Przeglądarka Filmów"
-          />
-          <Tab
-            icon={<PeopleIcon />}
-            iconPosition="start"
-            label="Rick & Morty (Warm-up)"
-          />
+        <Tabs value={currentTab} onChange={handleTabChange} aria-label="Główna nawigacja">
+          <Tab icon={<MovieIcon />} iconPosition="start" label="Przeglądarka Filmów" />
+          <Tab icon={<PeopleIcon />} iconPosition="start" label="Rick & Morty (Warm-up)" />
         </Tabs>
 
         {/* DYNAMICZNA WYSZUKIWARKA */}
         <TextField
           size="small"
-          placeholder={
-            currentTab === 0 ? "Szukaj filmu..." : "Szukaj postaci..."
-          }
+          placeholder={currentTab === 0 ? "Szukaj filmu..." : "Szukaj postaci..."}
           value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setPage(1);
-          }}
+          onChange={handleSearchChange}
           slotProps={{
             input: {
               startAdornment: (
@@ -142,38 +146,18 @@ function App() {
         />
       </Box>
 
-      {/* 3. ANIMOWANA ZMIANA TREŚCI Z UŻYCIEM ANIMATEPRESENCE */}
+      {/* ANIMOWANA ZMIANA STRON */}
       <AnimatePresence mode="wait">
         <motion.div
-          key={currentTab} // Klucz oparty o stan tabu zmusza komponent do ponownego montowania i uruchamia animację exit/initial
+          key={location.pathname} // Klucz oparty o pathname odpala animację przy przejściu między URL
           variants={pageVariants}
           initial="initial"
           animate="animate"
           exit="exit"
-          style={{ width: "100%" }} // Rozwiązuje problem ewentualnego kurczenia się siatki przy transformacjach x
+          style={{ width: "100%" }}
         >
-          {currentTab === 0 ? (
-            // RENDEROWANIE FILMÓW (Zarządza swoimi wewnętrznymi skeletonami i błędami w InfiniteMovieList)
-            <InfiniteMovieList query={searchQuery} />
-          ) : (
-            // RENDEROWANIE RICK & MORTY
-            <>
-              {isRamError && (
-                <Alert severity="error" sx={{ mb: 4 }}>
-                  Wystąpił błąd:{" "}
-                  {ramError instanceof Error
-                    ? ramError.message
-                    : "Błąd sieci RAM API"}
-                </Alert>
-              )}
-              <CharacterList
-                data={ramData}
-                page={page}
-                setPage={setPage}
-                isLoading={isRamLoading}
-              />
-            </>
-          )}
+          {/* Miejsce na podmontowanie podstron (MoviesPage / RickAndMortyPage) */}
+          <Outlet />
         </motion.div>
       </AnimatePresence>
     </Container>
@@ -181,3 +165,16 @@ function App() {
 }
 
 export default App;
+
+/**
+ * DOKUMENTACJA ZGODNOŚCI Z RODO (Zasada minimalizacji danych):
+ * * W projekcie zbierane są wyłącznie anonimowe dane analityczne:
+ * 1. pageview (URL ścieżki) - niezbędne do analizy, które sekcje aplikacji są popularne.
+ * 2. cta_click (nazwa zakładki) - określa zaangażowanie w nawigację.
+ * 3. search_submit / search_abandoned (fraz wyszukiwania) - pozwala optymalizować trafność wyników API.
+ *
+ * Dlaczego są niezbędne: Dane te nie zawierają żadnych informacji pozwalających na identyfikację użytkownika 
+ * (PII - Personally Identifiable Information). Adresy IP są przymusowo anonimizowane na poziomie konfiguracji 
+ * (anonymize_ip: true). Zbieranie tych danych opiera się na uzasadnionym interesie administratora w celu 
+ * poprawy działania interfejsu (UX), bez naruszania prywatności użytkowników.
+ */
