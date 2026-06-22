@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <title>Analiza Danych CSV — Lab 12</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</head>
+<body style="background: #121212; color: #fff; font-family: sans-serif; padding: 20px;">
+
+    <h1>Analiza danych z pliku CSV</h1>
+    <p>Status wczytywania: <span id="status" style="color: #ff9800;">Oczekiwanie...</span></p>
+    <p>Otwórz <strong>Konsolę Deweloperską (F12 -> zakładka Console)</strong>, aby zobaczyć tabele z wynikami.</p>
+
+    <script>
+        // Funkcja wczytująca plik CSV z tej samej lokalizacji
+        async function loadCSV(path) {
+            try {
+                const response = await fetch(path);
+                if (!response.ok) {
+                    throw new Error(`Nie można odnaleźć pliku ${path}. Upewnij się, że uruchomiłeś serwer lokalny (np. Live Server).`);
+                }
+                const text = await response.text();
+                return Papa.parse(text, { 
+                    header: true, 
+                    dynamicTyping: true, 
+                    skipEmptyLines: true 
+                }).data;
+            } catch (error) {
+                document.getElementById('status').innerText = "BŁĄD! " + error.message;
+                document.getElementById('status').style.color = "#e50914";
+                console.error(error);
+            }
+        }
+
+        // --- FUNKCJE ANALITYCZNE ---
+
+        function bounceRateByPage(data) {
+            const stats = {};
+            for (const row of data) {
+                if (!stats[row.page]) stats[row.page] = { total: 0, bounced: 0 };
+                stats[row.page].total++;
+                if (row.bounce === true || row.bounce === "true") stats[row.page].bounced++;
+            }
+            return Object.entries(stats)
+                .map(([page, s]) => ({ page, bounceRate: (s.bounced / s.total * 100).toFixed(1) + "%" }))
+                .sort((a, b) => parseFloat(b.bounceRate) - parseFloat(a.bounceRate));
+        }
+
+        function formDropOff(data) {
+            const formRows = data.filter(r => r.page === "form" && r.form_step_reached);
+            const total = formRows.length;
+            const result = {};
+            for (let step = 1; step <= 4; step++) {
+                const reached = formRows.filter(r => Number(r.form_step_reached) >= step).length;
+                result[`Krok ${step}`] = `${(reached / total * 100).toFixed(1)}% (${reached}/${total})`;
+            }
+            return result;
+        }
+
+        function topClicks(data, n = 10) {
+            const freq = {};
+            for (const row of data) {
+                if (row.element_clicked) freq[row.element_clicked] = (freq[row.element_clicked] || 0) + 1;
+            }
+            return Object.entries(freq)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, n)
+                .map(([element, count]) => ({ element, count }));
+        }
+
+        // --- URUCHOMIENIE I WYŚWIETLENIE WYNIKÓW ---
+        
+        // Wywołujemy wczytanie pliku sessions_lab12.csv z tego samego folderu
+        loadCSV("sessions_lab12.csv").then(data => {
+            if (!data) return; // Jeśli wystąpił błąd, przerwij
+
+            document.getElementById('status').innerText = "Sukces! Dane zostały przeanalizowane.";
+            document.getElementById('status').style.color = "#4caf50";
+
+            console.log("%c--- PYTANIE 1: BOUNCE RATE PER STRONA ---", "color: #e50914; font-weight: bold; font-size: 14px;");
+            console.table(bounceRateByPage(data));
+
+            console.log("%c--- PYTANIE 2: DROP-OFF FORMULARZA KROK PO KROKU ---", "color: #e50914; font-weight: bold; font-size: 14px;");
+            console.table(formDropOff(data));
+
+            console.log("%c--- PYTANIE 3: NAJCZĘŚCIEJ KLIKANE ELEMENTY ---", "color: #e50914; font-weight: bold; font-size: 14px;");
+            console.table(topClicks(data, 5));
+        });
+
+    </script>
+</body>
+</html>

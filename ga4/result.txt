@@ -1,0 +1,24 @@
+--- PYTANIE 1: BOUNCE RATE PER STRONA ---
+index.html:81 
+Array(4)
+0: {page: 'home', bounceRate: '79.4%'}
+1: {page: 'about', bounceRate: '61.6%'}
+2: {page: 'confirm', bounceRate: '24.8%'}
+3: {page: 'form', bounceRate: '21.2%'}
+
+index.html:83 --- PYTANIE 2: DROP-OFF FORMULARZA KROK PO KROKU ---
+index.html:84 
+Object
+Krok 1: "100.0% (135/135)"
+Krok 2: "65.9% (89/135)"
+Krok 3: "37.0% (50/135)"
+Krok 4: "20.0% (27/135)"
+
+index.html:86 --- PYTANIE 3: NAJCZĘŚCIEJ KLIKANE ELEMENTY ---
+index.html:87 
+Array(5)
+0: {element: 'logo', count: 85}
+1: {element: 'form_next_btn', count: 52}
+2: {element: 'nav_about', count: 46}
+3: {element: 'scroll_banner', count: 45}
+4: {element: 'nav_form', count: 37}
